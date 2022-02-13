@@ -82,6 +82,7 @@ def load_data(Battary_list, dir_path):
                                   'CVCT':CVCT[idx]})
         Battery[name] = df_result
     np.save("dataset/CALCE_Batteries.npy", Battery)
+    print("Successfully saved to dataset/CALCE_Batteries.npy")
     return Battery
 
 
