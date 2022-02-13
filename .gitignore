@@ -1,0 +1,23 @@
+# Temp File
+*.log
+*.cache
+*.diff
+*.patch
+*.tmp
+
+# IDEA ignore
+.idea/
+/idea/
+*.ipr
+*.iml
+*.iws
+
+# package file
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# Python ignore
+__pycache__/
