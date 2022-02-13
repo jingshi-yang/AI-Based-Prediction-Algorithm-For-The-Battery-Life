@@ -4,77 +4,84 @@ import numpy as np
 import pandas as pd
 
 
-def read_data(data_list, data_path):
-    battery = {}
-    for name in data_list:
-        print('Loading dataset' + name + ' ...')
-        path = glob.glob(data_path + name + '/*.xlsx')
+
+def load_data(Battary_list, dir_path):
+    Battery = {}
+    for name in Battary_list:
+        print('Loading Dataset ' + name + ' ...')
+        path = glob.glob(dir_path + name + '/*.xlsx')
         dates = []
         for p in path:
-            df = pd.read_excel(p, sheet_name=1)
+            df = pd.read_excel(p, sheet_name = 1)
             print('Loading ' + str(p) + ' ...')
             dates.append(df['Date_Time'][0])
-            idx = np.array(path)[idx]
-            path_sorted = np.array(path)[idx]
+        idx = np.argsort(dates)
+        path_sorted = np.array(path)[idx]
 
-            count = 0
-            discharge_capacities = []
-            health_indicator = []
-            ir = []
-            CC_charge_time = []
-            CV_charge_time = []
-            for p in path_sorted:
-                df = pd.read_excel(p, sheet_name=1)
-                print('Loading ' + str(p) + '...')
-                cycles = list(set(df['Cycle_Index']))
-                for c in cycles:
-                    df_lim = df[df['Cycle_Index'] == c]
-                    # Charging
-                    df_c = df_lim[(df_lim['Step_Index'] == 2) | (df_lim['Step_Index'] == 4)]
-                    c_v = df_c['Voltage(V)']
-                    c_c = df_c['Current(A)']
-                    c_t = df_c['Test_Time(s)']
-                    # CC or CV
-                    df_cc = df_lim[df_lim['Step_Index'] == 2]
-                    df_cv = df_lim[df_lim['Step_Index'] == 4]
-                    CC_charge_time.append(np.max(df_cc['Test_Tims(s)']) - np.min(df_cc['Test_Time(s)']))
-                    CV_charge_time.append(np.max(df_cv['Test_Tims(s)']) - np.min(df_cc['Test_Time(s)']))
-                    # Discharging
-                    df_d = df_lim[df_lim['Step_Index'] == 7]
-                    d_v = df_d['Voltage(V)']
-                    d_c = df_d['Current(A)']
-                    d_t = df_d['Test_Time(s)']
-                    d_ir = df_d['Internal_Resistance(Ohm)']
+        count = 0
+        discharge_capacities = []
+        health_indicator = []
+        internal_resistance = []
+        CCCT = []
+        CVCT = []
+        for p in path_sorted:
+            df = pd.read_excel(p,sheet_name = 1)
+            print('Loading ' + str(p) + ' ...')
+            cycles = list(set(df['Cycle_Index']))
+            for c in cycles:
+                df_lim = df[df['Cycle_Index'] == c]
+                #Charging
 
-                    if len(list(d_c)) != 0:
-                        time_diff = np.diff(list(d_t))
-                        d_c = np.array(list(d_c))[1:]
-                        discharge_capacity = time_diff * d_c / 3600
-                        discharge_capacity = [np.sum(discharge_capacity[:n])
-                                              for n in range(discharge_capacity.shape[0])]
-                        discharge_capacities.append(-1 * discharge_capacity[-1])
+                df_c = df_lim[(df_lim['Step_Index'] == 2)|(df_lim['Step_Index'] == 4)]
+                c_v = df_c['Voltage(V)']
+                c_c = df_c['Current(A)']
+                c_t = df_c['Test_Time(s)']
 
-                        dec = np.abs(np.array(d_v) - 3.8)[1:]
-                        start = np.array(discharge_capacity)[np.argmin(dec)]
-                        dec = np.abs(np.array(d_v) - 3.4)[1:]
-                        end = np.array(discharge_capacity)[np.argmin(dec)]
-                        health_indicator.append(-1 * (end - start))
+                #CC or CV
+                df_cc = df_lim[df_lim['Step_Index'] == 2]
+                df_cv = df_lim[df_lim['Step_Index'] == 4]
+                CCCT.append(np.max(df_cc['Test_Time(s)']) - np.min(df_cc['Test_Time(s)']))
+                CVCT.append(np.max(df_cv['Test_Time(s)']) - np.min(df_cv['Test_Time(s)']))
 
-                        ir.append(np.mean(np.array(d_ir)))
-                        count += 1
+                #Discharging
+                df_d = df_lim[df_lim['Step_Index'] == 7]
+                d_v = df_d['Voltage(V)']
+                d_c = df_d['Current(A)']
+                d_t = df_d['Test_Time(s)']
+                d_im = df_d['Internal_Resistance(Ohm)']
 
-            discharge_capacities = np.array(discharge_capacities)
-            health_indicator = np.array(health_indicator)
-            ir = np.array(ir)
-            CV_charge_time = np.array(CV_charge_time)
-            CC_charge_time = np.array(CC_charge_time)
+                if len(list(d_c)) != 0:
+                    time_diff = np.diff(list(d_t))
+                    d_c = np.array(list(d_c))[1:]
+                    discharge_capacity = time_diff*d_c/3600 # Q = A*h
+                    discharge_capacity = [np.sum(discharge_capacity[:n])
+                                          for n in range(discharge_capacity.shape[0])]
+                    discharge_capacities.append(-1*discharge_capacity[-1])
 
-            df_result = pd.DataFrame({'cycle': np.linspace(1, idx.shape[0], idx.shape[0]),
-                                      'capacity': discharge_capacities[idx],
-                                      'SOH': health_indicator[idx],
-                                      'resistance': ir[idx],
-                                      'CCCT': CC_charge_time[idx],
-                                      'CVCT': CV_charge_time[idx]
-                                      })
-            battery[name] = df_result
-    return battery
+                    dec = np.abs(np.array(d_v) - 3.8)[1:]
+                    start = np.array(discharge_capacity)[np.argmin(dec)]
+                    dec = np.abs(np.array(d_v) - 3.4)[1:]
+                    end = np.array(discharge_capacity)[np.argmin(dec)]
+                    health_indicator.append(-1 * (end - start))
+
+                    internal_resistance.append(np.mean(np.array(d_im)))
+                    count += 1
+
+        discharge_capacities = np.array(discharge_capacities)
+        health_indicator = np.array(health_indicator)
+        internal_resistance = np.array(internal_resistance)
+        CCCT = np.array(CCCT)
+        CVCT = np.array(CVCT)
+
+        # idx = drop_outlier(discharge_capacities, count, 40)
+        df_result = pd.DataFrame({'cycle':np.linspace(1,idx.shape[0],idx.shape[0]),
+                                  'capacity':discharge_capacities[idx],
+                                  'SoH':health_indicator[idx],
+                                  'resistance':internal_resistance[idx],
+                                  'CCCT':CCCT[idx],
+                                  'CVCT':CVCT[idx]})
+        Battery[name] = df_result
+    np.save("dataset/CALCE_Batteries.npy", Battery)
+    return Battery
+
+
