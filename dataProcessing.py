@@ -1,13 +1,13 @@
 import glob
+import math
 
 import numpy as np
 import pandas as pd
 
-
-def load_data(Battary_list, dir_path):
+def load_data(data_list, dir_path):
     Battery = {}
-    for name in Battary_list:
-        print('Load Dataset ' + name + ' ...')
+    for name in data_list:
+        print('Loading Battery data ' + name + ' ...')
         path = glob.glob(dir_path + name + '/*.xlsx')
         dates = []
         for p in path:
@@ -25,7 +25,7 @@ def load_data(Battary_list, dir_path):
         CVCT = []
         for p in path_sorted:
             df = pd.read_excel(p, sheet_name=1)
-            print('Load ' + str(p) + ' ...')
+            print('Loading ' + str(p) + ' ...')
             cycles = list(set(df['Cycle_Index']))
             for c in cycles:
                 df_lim = df[df['Cycle_Index'] == c]
@@ -34,6 +34,7 @@ def load_data(Battary_list, dir_path):
                 c_v = df_c['Voltage(V)']
                 c_c = df_c['Current(A)']
                 c_t = df_c['Test_Time(s)']
+
                 # CC or CV
                 df_cc = df_lim[df_lim['Step_Index'] == 2]
                 df_cv = df_lim[df_lim['Step_Index'] == 4]
@@ -69,7 +70,7 @@ def load_data(Battary_list, dir_path):
         CCCT = np.array(CCCT)
         CVCT = np.array(CVCT)
 
-        # idx = drop_outlier(discharge_capacities, count, 40)
+        idx = drop_outlier(discharge_capacities, count, 40)
         df_result = pd.DataFrame({'cycle': np.linspace(1, idx.shape[0], idx.shape[0]),
                                   'capacity': discharge_capacities[idx],
                                   'SoH': health_indicator[idx],
@@ -80,3 +81,40 @@ def load_data(Battary_list, dir_path):
     np.save("dataset/CALCE_Batteries.npy", Battery)
     print("Successfully saved to dataset/CALCE_Batteries.npy")
     return Battery
+
+def drop_outlier(array,count,bins):
+    index = []
+    range_ = np.arange(1,count,bins)
+    for i in range_[:-1]:
+        array_lim = array[i:i+bins]
+        sigma = np.std(array_lim)
+        mean = np.mean(array_lim)
+        th_max = mean + sigma * 2
+        th_min = mean - sigma * 2
+        idx = np.where((array_lim < th_max) & (array_lim > th_min))
+        idx = idx[0] + i
+        index.extend(list(idx))
+    return np.array(index)
+
+def build_sequences(text, window_size):
+    # Text = List of capacity
+    x, y = [], []
+    for i in range(len(text) - window_size):
+        sequence = text[i:i+window_size]
+        target = text[i+1:i+1+window_size]
+
+        x.append(sequence)
+        y.append(target)
+
+    return np.array(x), np.array(y)
+
+def get_train_test(data_dict, name, window_size=8):
+    data_sequence = data_dict[name]['capacity']
+    train_data, test_data = data_sequence[:window_size+1], data_sequence[window_size+1:]
+    train_x, train_y = build_sequences(text=v['capacity'], window_size=window_size)
+    for k, v in data_dict.items():
+        if k != name:
+            data_x, data_y = build_sequences(text=v['capacity'], window_size=window_size)
+            train_x, train_y = np.r_[train_x, data_x], np.r_[train_y, data_y]
+
+    return train_x, train_y, list(train_data), list(test_data)
