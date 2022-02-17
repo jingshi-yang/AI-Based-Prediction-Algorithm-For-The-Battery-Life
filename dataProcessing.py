@@ -1,8 +1,11 @@
 import glob
-import math
 
 import numpy as np
 import pandas as pd
+
+from math import sqrt
+from sklearn.metrics import mean_absolute_error, mean_squared_error
+
 
 def load_data(data_list, dir_path):
     Battery = {}
@@ -82,6 +85,7 @@ def load_data(data_list, dir_path):
     print("Successfully saved to dataset/CALCE_Batteries.npy")
     return Battery
 
+
 def drop_outlier(array,count,bins):
     index = []
     range_ = np.arange(1,count,bins)
@@ -96,25 +100,9 @@ def drop_outlier(array,count,bins):
         index.extend(list(idx))
     return np.array(index)
 
-def build_sequences(text, window_size):
-    # Text = List of capacity
-    x, y = [], []
-    for i in range(len(text) - window_size):
-        sequence = text[i:i+window_size]
-        target = text[i+1:i+1+window_size]
 
-        x.append(sequence)
-        y.append(target)
-
-    return np.array(x), np.array(y)
-
-def get_train_test(data_dict, name, window_size=8):
-    data_sequence = data_dict[name]['capacity']
-    train_data, test_data = data_sequence[:window_size+1], data_sequence[window_size+1:]
-    train_x, train_y = build_sequences(text=v['capacity'], window_size=window_size)
-    for k, v in data_dict.items():
-        if k != name:
-            data_x, data_y = build_sequences(text=v['capacity'], window_size=window_size)
-            train_x, train_y = np.r_[train_x, data_x], np.r_[train_y, data_y]
-
-    return train_x, train_y, list(train_data), list(test_data)
+def evaluate(y_test, y_predict):
+    mae = mean_absolute_error(y_test, y_predict)
+    mse = mean_squared_error(y_test, y_predict)
+    rmse = sqrt(mse)
+    return mae, mse, rmse

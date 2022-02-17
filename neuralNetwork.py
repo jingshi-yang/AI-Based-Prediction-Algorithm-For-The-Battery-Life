@@ -1,16 +1,19 @@
 import torch
 
+
 class NeuralNetwork(torch.nn.Module):
 
-    def __init__(self, input_size, hidden_dim, num_layers, is_bidirectional, output_size=1):
+    def __init__(self, input_size, hidden_dim, num_layers, is_bidirectional, n_class=1):
         super(NeuralNetwork, self).__init__()
+        self.hidden_dim = hidden_dim
         self.cell = torch.nn.LSTM(input_size=input_size,
                                   hidden_size=hidden_dim,
                                   num_layers=num_layers,
                                   batch_first=True,
                                   bidirectional=is_bidirectional
                                   )
-        self.linear = torch.nn.Linear(hidden_dim, output_size)
+        self.linear = torch.nn.Linear(hidden_dim, n_class)
+
 
     def forward(self, f_input):
         # Input: (batch_size, seq_len, input_size)
