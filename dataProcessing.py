@@ -15,7 +15,7 @@ def load_data(data_list, dir_path):
         dates = []
         for p in path:
             df = pd.read_excel(p, sheet_name=1)
-            print('Load ' + str(p) + ' ...')
+            print('Loading ' + str(p) + ' ...')
             dates.append(df['Date_Time'][0])
         idx = np.argsort(dates)
         path_sorted = np.array(path)[idx]
@@ -93,8 +93,8 @@ def drop_outlier(array,count,bins):
         array_lim = array[i:i+bins]
         sigma = np.std(array_lim)
         mean = np.mean(array_lim)
-        th_max = mean + sigma * 2
-        th_min = mean - sigma * 2
+        th_max = mean + sigma * 3
+        th_min = mean - sigma * 3
         idx = np.where((array_lim < th_max) & (array_lim > th_min))
         idx = idx[0] + i
         index.extend(list(idx))

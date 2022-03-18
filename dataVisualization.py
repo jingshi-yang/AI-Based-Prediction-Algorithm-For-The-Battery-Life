@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-a = np.load('CALCE.npy',allow_pickle=True);
+a = np.load('dataset/CALCE_Batteries.npy',allow_pickle=True);
 a = a.item();
 print(a);
 
